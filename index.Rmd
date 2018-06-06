@@ -9,7 +9,7 @@ output:
       before_body: header.html
       after_body: footer.html
 ---
-> I bought the book "Knowledge is Beautiful" by David McCandless in 2014 and it's been a fantastic coffee table book ever since. I set out to recreate a couple of the data visualizations in R. 
+> In this series of posts I will set out to recreate some of the visualizations from the book "Knowledge is Beautiful" by David McCandless in R. 
 
 David McCandless is author of two bestselling infographics books and gave a [TED talk about data visualization](http://www.ted.com/talks/david_mccandless_the_beauty_of_data_visualization). I bought his second book ["Knowledge is Beautiful"](https://informationisbeautiful.net/2014/knowledge-is-beautiful/), in 2015, which contains 196 beautiful infographics.
 
@@ -18,7 +18,7 @@ At that time, I was really into **The Walking Dead**, and his book inspired me t
 ![](C:/Users/Matthew/Documents/WalkingDead_infographic.jpg)
 
 
-I was trying to think of some fun data visualization projects and decided to choose a couple from the book that could be recreated as close to possible in `R`.
+Recently, I was trying to think of some fun data visualization projects and decided to choose a couple from the book that could be recreated as close to possible in `R`.
 
 The book is an excellent resource for those who like these sorts of exercises as **every single visualization in the book is paired with an online dataset to** [explore at your interest!!!](http://www.informationisbeautiful.net/data/). I never knew how rich the datasets were until I tried to recreate my first visualization, "**Best in Show**". The dataset for [**Best in Show**](bit.ly/KIB_BestDogs) alone, is an excel file with eight sheets! 
 
