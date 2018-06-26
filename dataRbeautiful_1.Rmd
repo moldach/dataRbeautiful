@@ -1,0 +1,240 @@
+---
+title: "dataRbeautiful: Part 1"
+author: "by [Matthew J. Oldach](https://github.com/moldach/) - `r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    css: 
+    number_sections: FALSE
+    includes:
+      before_body: header.html
+      after_body: footer.html
+---
+> In this series of posts I will set out to recreate some of the visualizations from the book "Knowledge is Beautiful" by David McCandless in R. 
+
+David McCandless is author of two bestselling infographics books and gave a [TED talk about data visualization](http://www.ted.com/talks/david_mccandless_the_beauty_of_data_visualization). I bought his second book ["Knowledge is Beautiful"](https://informationisbeautiful.net/2014/knowledge-is-beautiful/), in 2015, which contains 196 beautiful infographics.
+
+At that time, I was really into **The Walking Dead**, and his book inspired me to make my own infographic:
+
+![](C:/Users/Matthew/Documents/WalkingDead_infographic.jpg)
+
+
+Recently, I was trying to think of some fun data visualization projects and decided to choose a couple from the book that could be recreated as close to possible in `R`.
+
+The book is an excellent resource for those who like these sorts of exercises as **every single visualization in the book is paired with an online dataset to** [explore at your interest!!!](http://www.informationisbeautiful.net/data/). I never knew how rich the datasets were until I tried to recreate my first visualization, "**Best in Show**". The dataset for [**Best in Show**](bit.ly/KIB_BestDogs) alone, is an excel file with eight sheets! 
+
+McCandles says the whole book took him 15,832 hours over two-years and I don't doubt it. Whipping up a quick EDA plotcan be fast and simple for a meeting if you only care about actionable results. However, if your publishing something it takes some time to create a stunning visual. 
+
+# Best in Show
+***
+**Best in Show** is a scatter-plot of dog silhouettes, color-coded based on the category of dog, sized accordingly, and pointing either left-or-right, depending on their intelligence.
+
+Let's load the environment; I like the `needs()` package which makes it simple to install & load packages into `R`.
+
+```{r setup, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (!require("needs")) {
+  install.packages("needs", dependencies = TRUE)
+  library(needs)
+}
+```
+
+As mentioned above, the data is an excel file with eight sheets. We can read in the Excel file with `read_excel()` and specify the sheet we would like to access with the `sheet =` argument.
+
+```{r}
+# install&Load readxl package
+needs(here,
+      readxl,
+      stringr,
+      dplyr,    # to use select()
+      magrittr) # to use %<>% operators
+
+path = here()
+
+# Specify the worksheet by name
+dog_excel <- read_excel("~/bestinshow.xlsx", sheet = "Best in show full sheet", range = cell_rows(3:91))
+
+# Pick the desired variables
+dog_excel %<>%
+  select(1,3,5:6, "intelligence category", "size category")
+
+# Rename the columns
+colnames(dog_excel) <- c("breed", "category", "score", "popularity", "intelligence", "size")
+
+# Remove first row (non-descript column names)
+dog_excel <- dog_excel[-1,]
+```
+
+Take a look at the HTML table (supports filtering, pagination, and sorting).
+
+```{r}
+needs(DT)
+datatable(dog_excel, options = list(pageLength = 5))
+```
+
+Take a look at the `intelligence` levels in the dataset.
+
+```{r}
+# What are the intelligence levels?
+unique(dog_excel$intelligence)
+```
+
+McCandless' classified dogs `intelligence` as either "dumb" or "clever". But here we see there are categories in this *clean* dataset. So let's assign the top three factors as `clever` and the other three as `dumb`
+
+```{r}
+dog_excel$intelligence %<>% 
+  str_replace(pattern = "Brightest", replace = "clever", .) %>%   
+  str_replace(pattern = "Above average", replace = "clever", .) %>% 
+  str_replace(pattern = "Excellent", replace = "clever", .) %>% 
+  str_replace(pattern = "Average", replace = "dumb", .) %>% 
+  str_replace(pattern = "Fair", replace = "dumb", .) %>% 
+  str_replace(pattern = "Lowest", replace = "dumb", .)
+```
+
+There are 87 dogs in the original visualization. I found 24 silhouettes under an [**Creative Commons Attribution-Share Alike 4.0 License**](https://creativecommons.org/licenses/by-sa/4.0/) on [**SuperColoring.com**](http://www.supercoloring.com). This means I can freely copy and redistribute in any medium or format as long as I give a link to the webpage and indicate the author's name and the license. I've included that information in a `.csv.` and we will use this to subset McCandless's data.
+
+```{r, message = FALSE}
+needs(readr)
+dog_silhouettes <- read_csv("~/dog_silhouettes.csv")
+
+dog_df <- dog_excel %>% 
+  inner_join(dog_silhouettes, by = "breed")
+
+# change popularity from string into numeric values
+dog_df$popularity <- as.numeric(dog_df$popularity)
+```
+
+We need to use the `magick` package to make the white background surrounding the `.svg` silhouettes transparent, scale images to a common size (by width), and save them as `.png`'s.
+
+```{r}  
+needs(magick)
+
+file.names <- dir(path, pattern = ".svg")
+
+for (file in file.names){
+  # read in the file
+  img <- image_read_svg(file)
+  # scale all images to a common scale
+  img_scaled <- image_scale(img, 700)
+  # make the background transparent
+  img_trans <- image_transparent(img_scaled, 'white')
+  # get rid of .svg ending
+  file_name <- str_replace(file, pattern = ".svg", replace = "")
+  # write out the file as a .png
+  image_write(img_trans, paste0(file_name, ".png"))
+}
+```
+
+Some of the dog silhouette's are pointing their heads in the opposite direction. We need to use imag_flop() from the `magick` package so that all are facing the same direction. Later we can subset the data frame by intelligence so `clever` and `dumb` dogs face opposite directions.
+
+```{r}
+path = here()
+
+flop.images <- c("~/labrador-retriever-black-silhouette.png", "~/border-terrier-black-silhouette.png", "~/boxer-black-silhouette.png", "~/french-bulldog-black-silhouette.png", "~/german-shepherd-black-silhouette.png", "~/golden-retriever-black-silhouette.png", "~/greyhound-black-silhouette.png", "~/rottweiler-black-silhouette.png")
+
+for(i in flop.images){
+  i <- str_replace(i, pattern = "~/", replace = "")
+  img <- image_read(i)
+  img_flop <- image_flop(img)
+  image_write(img_flop, i)
+}
+```
+
+The next step is to color the dogs according to category. 
+
+Let's write a function that can be given three arguments: 1) `df` a data frame, 2) `category` the type of dog it is, 3) `color` a specific color for each `category`. 
+
+The first step is to select only those dogs which belong to the `category` of interest. This can be done with `filter()` from the `dplyr` package. However, if you want to use `dplyr` functions, like `filter()`, you need to [follow the instruction at this website](https://rpubs.com/hadley/dplyr-programming); set with `enquo`.
+
+```{r}
+img_color <- function(df, category, color){
+  # Make filter a quosure
+  category = enquo(category)
+  # subset df on category
+  new_df <- df  %>% 
+    filter(category == !!category)
+  # get directory paths of images for the for loop 
+  category_names <- new_df$breed  %>%
+    tolower() %>% 
+    str_replace_all(" ", "-") %>% 
+    paste0("-black-silhouette.png")
+  for(name in category_names){
+    img <- image_read(name)
+    img_color <- image_fill(img, color, "+250+250")
+    image_write(img_color, name)
+  }
+}
+```
+
+I wanted to replicate the figures as close as possible within R so to replicate the colors of the visualizations I scanned the book, saved the images, and then used this [tool to get the html color codes](https://html-color-codes.info/colors-from-image/).
+
+Now let's Use the created function above to color dog silhouettes according to their `category`.
+
+```{r}
+# Herding color "#D59E7B"
+img_color(dog_df, "herding", "#D59E7B")
+
+# Hound color "#5E4D6C"
+img_color(dog_df, "hound", "#5E4D6C")
+
+# Non-sporting color "#6FA86C"
+img_color(dog_df, "non-sporting", "#6FA86C")
+
+# Sporting color "#B04946"
+img_color(dog_df, "sporting", "#B04946")
+
+# Terrier color "#A98B2D"
+img_color(dog_df, "terrier", "#A98B2D")
+
+# Toy color "#330000"
+img_color(dog_df, "toy", "#330000")
+
+# Working color "#415C55"
+img_color(dog_df, "working", "#415C55")
+```
+
+Okay it's finally time to make the visualization.
+
+Usually one plots points with `geom_point()` from `ggplot2` but in this case I want images for each of the breed's instead. We can use the `ggimage` package, and with a little tweaking we can flop images based on `intelligence`. `ggimage` does not support color as an aesthetic like `ggplot2` which is why I manually assigned colors & sizes earlier.
+
+Since `popularity` scores range from 1 to 140 with 1 being the **most** popular we will need to reverse the y-axis with `scale_y_reverse()`.
+
+
+```{r}
+needs(ggplot2,
+      ggimage)
+# add "~/" to get filenames of images for plotting
+dog_df$name <- paste0("~/", dog_df$name)
+
+# create a ggplot/ggimage object
+p <- ggplot(subset(dog_df, intelligence == "clever"), aes(x = score, y = popularity, image = name), alpha = 0.5) + geom_image(image_fun = image_flop) + geom_image(data=subset(dog_df, intelligence == "dumb")) +
+  labs(title = "Best in Show", subtitle = "The ultimate datadog", caption = "Source: bit.ly/KIB_BestDogs") +
+  labs(x = NULL, y = NULL) +
+  theme(panel.background = element_blank(),
+        legend.position = "top", 
+        legend.box = "horizontal",
+        plot.title = element_text(size = 13,
+                                  # I'm not sure what font he chose so I'll pick something I think looks similar
+                                 family = "AvantGarde",
+                                 face = "bold", 
+                                              lineheight = 1.2),
+        plot.subtitle = element_text(size = 10,
+                                     family = "AvantGarde"), 
+        plot.caption = element_text(size = 5,
+                                    hjust = 0.99),  
+        axis.text = element_blank(), 
+        axis.ticks = element_blank()) +
+  scale_y_reverse()
+```
+
+The final step is to add text annotations underneath the dog breeds. Since I subset `dog_df` by `intelligence` if I try to annotate with `geom_text()` it will only annotate part of the data. We will need to the `annotate()` function instea since geome are not mapped from variables of a data frame, but are instead passed in as vectors.
+
+```{r, warning = FALSE}
+# Add annotations
+p + annotate("text", x=dog_df$score[1:24], y=((dog_df$popularity[1:24])+6), label = dog_df$breed[1:24], size = 2.0)
+```
+
+The visualization looks similar to the original and highlights most of the aesthetics that were included. One could always add the additional details in Adobe Illustrator or Inkscape to make it look more like [the final visualization](https://informationisbeautiful.net/visualizations/best-in-show-whats-the-top-data-dog/)
+
+![](C:/Users/Matthew/Documents/best-in-show.png)
+
+Stay tuned for Part II!

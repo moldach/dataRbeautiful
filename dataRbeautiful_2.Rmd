@@ -1,0 +1,259 @@
+---
+title: "dataRbeautiful: Part 2"
+author: "by [Matthew J. Oldach](https://github.com/moldach/) - `r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    css: 
+    number_sections: FALSE
+    includes:
+      before_body: header.html
+      after_body: footer.html
+---
+> In part II of this series I continue to recreate some of the visualizations from the book "Knowledge is Beautiful" by David McCandless in R. 
+
+David McCandless is author of two bestselling infographics books and gave a [TED talk about data visualization](http://www.ted.com/talks/david_mccandless_the_beauty_of_data_visualization). I bought his second book ["Knowledge is Beautiful"](https://informationisbeautiful.net/2014/knowledge-is-beautiful/), in 2015, which contains 196 beautiful infographics.
+
+If you haven't checked out [Part I of the series](https://towardsdatascience.com/recreating-data-visualizations-from-the-book-knowledge-is-beautiful-e455e7126071) yet, please do.
+
+# Passwords
+***
+This visualization is a scatter-plot of commonly used passwords arranged along the x-axis, from left-to-right, according to the first character in the password [A to Z] then [0-9]. Passwords are color-coded according to the category, sized according to the strength of the password, and the frequency of use along the y-axis.
+
+In the last post I download the data as an excel from the Google Docs and loaded the appropriate sheet with `read_excel()` function from the `readxl` package. 
+
+Frustratingly, data can sometimes be distributed within PDFs. For example, Rafael Irizarry, walks through a new calculation of excess mortality in Puerto Rico after the devastating Hurricane Maria in 2017, using newly released data from the Puerto Rico government. [Irizarry's post comes with the data but it's sadly in PDF form](https://simplystatistics.org/2018/06/08/a-first-look-at-recently-released-official-puerto-rico-death-count-data/).
+
+The [tabulizer](https://github.com/ropensci/tabulizer) library provides R bindings to the [Tabula java library](https://github.com/tabulapdf/tabula-java/) and can be used to extract tables from PDF documents.
+
+The dataset is located here: [bit.ly/KIB_Passwords](https://docs.google.com/spreadsheets/d/1cz7TDhm0ebVpySqbTvrHrD3WpxeyE4hLZtifWSnoNTQ/edit#gid=24). Let's import it: 
+
+```{r}
+# I have to set this on mine
+Sys.setenv(JAVA_HOME="C:\\Program Files\\Java\\jre1.8.0_171")
+library(rJava)
+
+# Download tabular data from a pdf spanning multiple pages
+library(tabulizer)
+
+passwords <- "~/passwords.pdf"
+
+# The table spreads across five pages
+pages <- c(1:5)
+
+
+df_total <- data.frame()
+
+for (i in pages) {
+    out <- extract_tables(passwords, page = i)
+    out <- as.data.frame(out)
+    colnames(out) <- c("rank","password","category", "online_crack", "offline_crack", "rank_alt", "strength","font_size")
+    out <- out[-1,1:8]
+    df_total <- rbind(df_total, out)
+}
+```
+
+The data requires a bit of cleaning before continuing.
+
+```{r}
+df_total <- na.omit(df_total)
+df_total$rank <- as.numeric(df_total$rank)
+```
+
+Along the x-axis passwords are binned according to the first character of the password. We can use `grepl` inside `dplyr`'s `mutate()` function to create new column binning each password.
+
+```{r}
+
+# make a group for passwords beginning in A-Z and through 0-9
+df_total <- df_total %>% 
+  mutate(group = case_when(grepl("^A", password, ignore.case = TRUE) ~ "A",
+  grepl("^B", password, ignore.case = TRUE) ~ "B",
+  grepl("^C", password, ignore.case = TRUE) ~ "C",
+  grepl("^D", password, ignore.case = TRUE) ~ "D",
+  grepl("^E", password, ignore.case = TRUE) ~ "E",
+  grepl("^F", password, ignore.case = TRUE) ~ "F",
+  grepl("^G", password, ignore.case = TRUE) ~ "G",
+  grepl("^H", password, ignore.case = TRUE) ~ "H",
+  grepl("^I", password, ignore.case = TRUE) ~ "I",
+  grepl("^J", password, ignore.case = TRUE) ~ "J",
+  grepl("^K", password, ignore.case = TRUE) ~ "K",
+  grepl("^L", password, ignore.case = TRUE) ~ "L",
+  grepl("^M", password, ignore.case = TRUE) ~ "M",
+  grepl("^N", password, ignore.case = TRUE) ~ "N",
+  grepl("^O", password, ignore.case = TRUE) ~ "O",
+  grepl("^P", password, ignore.case = TRUE) ~ "P",
+  grepl("^Q", password, ignore.case = TRUE) ~ "Q",
+  grepl("^R", password, ignore.case = TRUE) ~ "R",
+  grepl("^S", password, ignore.case = TRUE) ~ "S",
+  grepl("^T", password, ignore.case = TRUE) ~ "T",
+  grepl("^U", password, ignore.case = TRUE) ~ "U",
+  grepl("^V", password, ignore.case = TRUE) ~ "V",
+  grepl("^W", password, ignore.case = TRUE) ~ "W",
+  grepl("^X", password, ignore.case = TRUE) ~ "X",
+  grepl("^Y", password, ignore.case = TRUE) ~ "Y",
+  grepl("^Z", password, ignore.case = TRUE) ~ "Z",
+  grepl("^0", password, ignore.case = TRUE) ~ "0",
+  grepl("^1", password, ignore.case = TRUE) ~ "1",
+  grepl("^2", password, ignore.case = TRUE) ~ "2",
+  grepl("^3", password, ignore.case = TRUE) ~ "3",
+  grepl("^4", password, ignore.case = TRUE) ~ "4",
+  grepl("^5", password, ignore.case = TRUE) ~ "5",
+  grepl("^6", password, ignore.case = TRUE) ~ "6",
+  grepl("^7", password, ignore.case = TRUE) ~ "7",
+  grepl("^8", password, ignore.case = TRUE) ~ "8",
+  grepl("^9", password, ignore.case = TRUE) ~ "9"))
+
+# get rid of NA's
+df_total <- na.omit(df_total)
+```
+
+The default is that 0-9 comes before A-Z but the McCandless visualization puts A-Z before 0-9, so let's rearrange that. 
+
+```{r}
+df_total$group <- factor(df_total$group, levels = c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U" , "V", "W", "X", "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9"))
+```
+
+Time to recreate the data visualization. We use `geom_text()` to display the passwords, sized according to the password strength, and color coordinated to the themes and colors used by McCandless
+
+![](C:/Users/Matthew/Documents/password_colors.png)
+
+```{r}
+library(ggplot2)
+library(extrafont)
+
+ggplot(df_total, aes(x = group, y = rank)) +
+geom_text(aes(label = password, color=category, size = font_size, alpha = 0.95)) + 
+  # add the custom colors
+  scale_color_manual(values=c("#477080", "#A3968A", "#C08B99", "#777C77", "#C8AB6D", "#819DAB", "#C18A6F", "#443F36", "#6A9577", "#BF655A")) +
+  scale_y_continuous(position = "right", breaks = c(1,10,50,100,250,500)) + 
+  scale_x_discrete(breaks = c("A","Z","1","9")) +
+  scale_y_reverse() +
+  labs(title = "Top 500 Passwords", subtitle = "Is yours here?", caption = "Source: bit.ly/KIB_Passwords") +
+  labs(x = NULL, position = "top") +
+theme(legend.position = "none",
+      panel.background = element_blank(),
+        plot.title = element_text(size = 13, 
+                                  family = "Georgia", 
+                                  face = "bold", lineheight = 1.2), plot.subtitle = element_text(size = 10,
+                                     family = "Georgia"), 
+        plot.caption = element_text(size = 5,
+                                    hjust = 0.99, family = "Georgia"),  
+        axis.text = element_text(family = "Georgia"))
+```
+
+The dataset contains a lot of information on [how passwords are cracked](https://docs.google.com/spreadsheets/d/1cz7TDhm0ebVpySqbTvrHrD3WpxeyE4hLZtifWSnoNTQ/edit#gid=9) if your interested in learning more. It also has some [tips on selecting a password](https://docs.google.com/spreadsheets/d/1cz7TDhm0ebVpySqbTvrHrD3WpxeyE4hLZtifWSnoNTQ/edit#gid=23). However, the TLDR can be excellently explained by this xkcd comic:
+
+![](C:/Users/Matthew/Documents/password_strength.png)
+
+In the top frame, the **Tr0ub4dor&3** password is easier for password cracking software to guess because it has less entropy than **correcthorsebatterystaple** and also more difficult for a human to remember, leading to insecure practices like writing the password down on a post-it attached to the monitor. So you should always convert a memorable sentence into a memorable password rather than a random alpha-numeric.
+
+# A Teaspoon of Sugar
+***
+The **Sugar** [dataset](https://docs.google.com/spreadsheets/d/1NUvUicSvcUq-BEoK5ATR2cCpXHmP7oRGEFgHuAhnBww/edit#gid=31) visualization is a circular barplot that shows the number of teaspoons of sugar found in common beverages. This graph uses the `coord_polar` option of `ggplot2` (*to simplify the post I've excluded the data munging code and instead provided a `.csv` file ready for plotting*).
+
+```{r}
+sugar <- read.csv("sugar.csv")
+
+# Re-order the factors the way they appear in the data frame
+names <- sugar$drinks
+names
+sugar$drinks <- factor(sugar$drinks, levels = rev(sugar$drinks), ordered = TRUE)
+
+# Create a custom color palette
+custompalette <- c("#C87295", "#CE7E9C", "#CE7E9C", "#C3C969", "#B77E94", "#693945", "#63645D", "#F9D9E0", "#B96E8E", "#18090E", "#E1E87E", "#B47E8F", "#B26F8B", "#B47E8F", "#B26F8B", "#B47E8F", "#B26F8B", "#9397A0", "#97B7C4", "#9AA24F", "#6B4A4F", "#97A053", "#B7BB6B", "#97A053", "#B7BB6B", "#97A053", "#B7BB6B", "#97A053", "#B7BB6B",
+"#CED97B", "#E4E89C", "#C87295", "#CE7E9C")
+
+ggplot(sugar, aes(x = drinks, y = teaspoons, fill = drinks)) +
+  geom_bar(width = 0.75, stat = "identity") +
+  coord_polar(theta = "y") +
+  xlab("") + ylab("") +
+  labs(title = "Teaspoons", caption = "Source: bit.ly/KIB_Sugar") +
+  # Increase ylim to avoid having a complete circle and set custom breaks to range of teaspoons
+  scale_y_continuous(limits = c(0,65), breaks=seq(0,26,1)) +
+  scale_fill_manual(values = custompalette) +
+  theme(legend.position = "none", 
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(color = "white", family = "Georgia"),
+        axis.ticks = element_blank(), 
+        panel.background = element_rect(fill = "black", color = NA),
+        plot.title = element_text(color = "white", 
+                                  size = 13, 
+                                  family = "Georgia", 
+                                  face = "bold", lineheight = 1.2), 
+        plot.caption = element_text(size = 5,
+                                    hjust = 0.99, 
+                                    color = "white", 
+                                    family = "Georgia"),
+        panel.grid.major.y = element_line(color = "grey48", size = 0.05, linetype = "dotted"),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank())
+```
+
+It would probably be best to manually add labels besides the bars as opposed to adjusting `hjust`in `axis.text.y =`. 
+
+Although I think the visualization is aesthetically pleasing, I would be remiss not to mention that these kinds of graphics should ultimately be avoided because it is hard/misleading to discern differences between groups ([here is a good link explaning in depth why](http://www.visualisingdata.com/2017/09/problems-barc-charts/)).
+
+Speaking of good data visualization practices, most people will tell you to avoid pie charts, dynamite plots, etc. yet I see them every day in academic publications, government reports, etc.
+
+Who know's, your employer may ask you to produce a bespoke infographic with a corporate logo in the background. 
+
+Well, your in luck! David McCandless included one pieplot in the book which I thought would be useful to reproduce; if only to show how to include background images in plots.
+
+# Who owns the Arctic?
+***
+Under international law, the high seas including the North Pole and the region of the Arctic Ocean surrounding it, are not owned by any country. However, territorial claims, which extend to the contiential shelf in the Arctic fall under Canada, Russia, Denmark, Norway, USA, and Iceland. 
+
+Although there's lots of information in the [dataset](https://docs.google.com/spreadsheets/d/1WUdFWTjR5UMLJtjVtKjOOvoTBApI2qJ_WDJr65S6Z5Q/edit#gid=0) I couldn't find the raw numbers he used for this visualization. Therefore, I'll just give a ballpark estimate for numbers in this example.
+
+```{r}
+library(magick)
+
+# use image under Creative Commons Attribution-Share Alike 3.0 Unported license.
+img <- image_read("https://upload.wikimedia.org/wikipedia/commons/9/91/Arctic_Ocean_location_map.svg")
+
+bitmap <- img[[1]]
+bitmap[4,,] <- as.raw(as.integer(bitmap[4,,]) * 0.4)
+taster <- image_read(bitmap)
+
+# custom pallete
+my_palette <- c("#ADDFEA","#E3E9A3", "#FFD283", "#CAC3CF", "#62465F", "#B8E29B")
+
+# Make data frame
+df <- data.frame(
+  country = c("USA", "Russia", "Norway", "Iceland", "Denmark", "Canada"), 
+  percentage = c(10,46,13,5,18,18))
+
+# Re-order the factors the way they appear in the data frame
+df$country <- factor(df$country, levels = c("USA", "Canada", "Denmark", "Iceland", "Norway", "Russia"), ordered = TRUE)
+
+g <- ggplot(df, aes(x = "", y=percentage, fill = country)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0) +
+  scale_y_continuous(breaks = c(105,25,53,62,75,90),labels = c("USA", "Russia", "Norway", "Iceland", "Denmark", "Canada")) +
+    xlab("") + ylab("") +
+  labs(title = "Who owns the Arctic?", caption = "Source: bit.ly/KIB_PolePosition") +
+  scale_fill_manual(values = my_palette) +
+  theme(legend.position = "none", 
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(color = c("#ADDFEA","#B8E29B", "#62465F", "#CAC3CF", "#FFD283", "#E3E9A3"), family = "Georgia", size = 7.6),
+        axis.ticks = element_blank(), 
+        panel.background = element_blank(),
+        axis.line = element_blank(),
+        plot.title = element_text(size = 13, 
+                                  family = "Georgia", 
+                                  face = "bold", lineheight = 1.2), 
+        plot.caption = element_text(size = 5,
+                                    hjust = 0.99, 
+                                    vjust = 15,
+                                    family = "Georgia"),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank())
+
+# You need to fiddle with the settings in RStudio and then Export to PDF, JPG, TIFF, etc.
+library(grid)
+grid.newpage()
+g
+grid.draw(rasterGrob(width = 0.34, height = 0.666, image=taster, just = "centre", hjust = 0.46, vjust = 0.47))
+```
+
+For more weird but (sometimes) useful, plots see [Xenographics](https://xeno.graphics/?utm_campaign=Data_Elixir&utm_medium=email&utm_source=Data_Elixir_179).
+```
