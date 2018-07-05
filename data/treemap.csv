@@ -1,0 +1,76 @@
+main,second,third,percent
+Humanitarian,Humanitarian,Humanitarian,41
+Humanitarian,Children,Children,16
+Humanitarian,Children,Welfare,6.5
+Humanitarian,Children,Health,4
+Humanitarian,Children,Poverty,2.5
+Humanitarian,Children,Abuse,1.5
+Humanitarian,Children,General,1.5
+Humanitarian,Disaster relief,Disaster relief,12.5
+Humanitarian,Disaster relief,General,12
+Humanitarian,Disaster relief,Medical,0.5
+Humanitarian,International poverty,International poverty,7
+Humanitarian,International poverty,General poverty,5.5
+Humanitarian,International poverty,Water,1
+Humanitarian,International poverty,Refugees,0.5
+Humanitarian,International development,International development,3
+Humanitarian,International development,General,3
+Humanitarian,Human rights,Human rights,2
+Humanitarian,Human rights,Women's rights,1.3
+Humanitarian,Human rights,General,0.7
+Humanitarian,Peace,Peace,0.5
+Humanitarian,Peace,Landmine clearance,0.5
+Health,Health,Health,21
+Health,Terminal illnesses,Terminal illnesses,9.5
+Health,Terminal illnesses,Cancer,5.5
+Health,Terminal illnesses,Cardiovascular,1.5
+Health,Terminal illnesses,Neurodegenerative,1
+Health,Terminal illnesses,Other,1.5
+Health,Medical research,Medical research,7
+Health,Medical research,Cancer research,5.5
+Health,Medical research,Other,2.2
+Health,Non-terminal illnesses,Non-terminal illnesses,1
+Health,Non-terminal illnesses,Diabetes & arthritis ,1
+Health,Hospitals,Hospitals,1
+Health,Hospitals,Private,1
+Health,Mental health & addiction,Mental health & addiction,0.5
+Health,Mental health & addiction,All mental health & addiction,0.5
+Health,Rescue services,Rescue services,2
+Health,Rescue services,All rescue services,2
+Arts & Culture,Arts & Culture,Arts & Culture,13
+Arts & Culture,Arts,Arts,11.7
+Arts & Culture,Arts,All arts,6.2
+Arts & Culture,Arts,Visual arts,2.4
+Arts & Culture,Arts,Music,1.8
+Arts & Culture,Arts,Dramatic arts,1.3
+Arts & Culture,Culture and learning,Culture and learning,1.5
+Arts & Culture,Culture and learning,Learned societies,0.8
+Arts & Culture,Culture and learning,Heritage sites & museums,0.7
+Social Care,Social Care,Social Care,10
+Social Care,Disability ,Disability ,5
+Social Care,Disability ,Visual impairment,4
+Social Care,Disability ,Other,1
+Social Care,Socio-economic disadvantage,Socio-economic disadvantage,2.5
+Social Care,Socio-economic disadvantage,Local community,1.5
+Social Care,Socio-economic disadvantage,Homelessness,1
+Social Care,Care and support,Care and support,2.5
+Social Care,Care and support,For the elderly,1.25
+Social Care,Care and support,Palliative care,1.25
+Animals,Animals,Animals,7
+Animals,Welfare ,Welfare ,5.4
+Animals,Welfare ,All animals,3.9
+Animals,Welfare ,Dogs & cats,1.5
+Animals,Conservation,Conservation,1.4
+Animals,Conservation,Birds,1.4
+Occupation Support Groups,Occupation Support Groups,Occupation Support Groups,3
+Occupation Support Groups,Armed forces,Armed forces,3
+Occupation Support Groups,Armed forces,Veterans,3
+Environment,Environment ,Environment ,3
+Environment,Conservation & public spaces,Conservation & public spaces,3
+Environment,Conservation & public spaces,Parks & gardens,1.8
+Environment,Conservation & public spaces,Eco-systems,0.9
+Environment,Conservation & public spaces,Woodland & trees,0.3
+Sport & Recreation,Sport & Recreation,Sport & Recreation,2
+Sport & Recreation,Sport,Sport,2
+Sport & Recreation,Sport,Football,1
+Sport & Recreation,Sport,Cricket,1
