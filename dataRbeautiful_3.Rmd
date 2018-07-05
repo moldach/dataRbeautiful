@@ -1,0 +1,106 @@
+---
+title: "dataRbeautiful: Part 3"
+author: "by [Matthew J. Oldach](https://github.com/moldach/) - `r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    css: 
+    number_sections: FALSE
+    includes:
+      before_body: header.html
+      after_body: footer.html
+---
+> Welcome to the third installment of the series where I recreate data visualizations, in R,  from the book Knowledge is Beautiful by David McCandless.
+
+# Live Long
+***
+The **Live long** visualization is a diverging bar chart of how certain actions affect your life span. 
+
+```{r}
+livelong <- read.csv("livelong.csv")
+
+legend_title <- "Strength of science"
+
+# order the x-axis
+livelong$action <- factor(livelong$action, levels = c("Sleep too much", "Be optimistic", "Get promoted", "Live in a city", "Live in the country", "Eat less food", "Hang out with women - a lot!", "Drink a little alcohol", "Be conscientious", "Have more orgasms", "And a little red wine", "With close friends", "Be polygamous, maybe", "Go to church regularly", "Sit down", "More pets", "Eat red meat", "Avoid cancer", "Avoid heart disease", "Be alcoholic", "Get health checks", "Get married!", "Be rich", "Be a woman", "Suffer severe mental illness", "Become obese", "Keep smoking", "Live healthily", "Exercise more", "Live at high altitude"))
+
+# Make plot
+p <- ggplot(livelong, aes(x = action, y = years, fill=strength)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(legend_title, values = c("#8BC7AC","#D99E50","#CDAD35")) +
+  labs(title = "Live Long...", subtitle = "What will really extend your life?", caption = "Source: bit.ly/KIB_LiveLong") +
+  scale_y_continuous(position = "bottom") +
+  scale_x_discrete(limits = rev(factor(livelong$action))) +
+  #scale_x_reverse() +
+  coord_flip() +
+  theme(legend.position = "top",
+      panel.background = element_blank(),
+        plot.title = element_text(size = 13, 
+                                  family = "Georgia", 
+                                  face = "bold", lineheight = 1.2), plot.subtitle = element_text(size = 10,
+                                     family = "Georgia"), 
+        plot.caption = element_text(size = 5,
+                                    hjust = 0.99, family = "Georgia"),  
+        axis.text = element_text(family = "Georgia"),
+      # Get rid of the y- and x-axis titles
+      axis.title.y=element_blank(),
+      axis.title.x=element_blank(),
+      # Get rid of axis text
+      axis.text.y = element_blank(),
+      axis.ticks.y = element_blank(),
+      legend.text = element_text(size = 8, family = "Georgia"),
+      legend.title = element_text(size = 8, family = "Georgia"),
+      legend.key.size = unit(1,"line"))
+
+# first attempt at annotation
+p + geom_text(aes(label = action), size = 3, family = "Georgia")
+```
+
+One instantly notices the text annotation is not properly aligned. Furthermore, since the bar chart is diverging at the center (zero) and modifications to the `hjust` parameter won't solve the problem on it's own. 
+
+One possible work-around is to use the `ggfittext` package which contrains text inside a defined area with the `geom_fit_text()` function that works more or less like `ggplot2::geom_text()`.
+
+```{r}
+# currently only supported by the dev version
+devtools::install_github("wilkox/ggfittext")
+library(ggfittext)
+
+p + geom_fit_text(aes(label = action), position = "stack", family = "Georgia")
+```
+
+We see that small bars were not annotated because the character strings are simply too big to be displayed in the bars.
+
+The original visualization never constrains the text to the bars so the best approach is to add a variable to the table that will allow you to left-justify some labels and right-justify others.
+
+```{r}
+# Set postive as "Up" and negative numbers as "Down"
+livelong$direction <- ifelse(livelong$years > 0, "Up", "Down")
+
+livelong$just <- ifelse(livelong$direction=="Down",0,1)
+
+p + geom_text(aes(label = action), size = 3, family = "Georgia", hjust=livelong$just) 
+```
+
+This justifies the boxes so that actions which decrease your lifespan are left-adjust and those which extend your life are right-adjusted. The only problem is that in the original visualization the text lines up on the center of the chart. I couldn't figure out how to do that so bonus points if you can figure that out and post it to the comments!
+
+A visualy appealing alternative is to have the names outside of the bars.
+
+```{r}
+livelong$just <- ifelse(livelong$direction=="Up",0,1)
+
+p + geom_text(aes(label = action), size = 3, family = "Georgia", hjust=livelong$just)
+```
+
+# Counting the Cause UK
+***
+The **Counting the Cause UK** [dataset](https://docs.google.com/spreadsheets/d/16q9OGYALTfyAwXDuH46UdCK2TJPcabo5U0UBKXaVgfQ/edit#gid=4) shows what charities UK citizens donate most to. 
+
+We can create a comparable vizualization using the `Treemap` library. It creates a hierarchical display of nested rectangles, which is then tiled within smaller rectangles representing sub-branches. 
+
+```{r}
+library(treemap)
+
+my_data <- read.csv("treemap.csv")
+
+tm <- treemap(my_data, index = c("main","second", "third"), vSize = "percent", vColor = "percent", type = "value", title = "Counting the Cause UK")
+
+```
