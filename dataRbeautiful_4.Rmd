@@ -1,0 +1,149 @@
+---
+title: "dataRbeautiful: Part 4"
+author: "by [Matthew J. Oldach](https://github.com/moldach/) - `r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    css: 
+    number_sections: FALSE
+    includes:
+      before_body: header.html
+      after_body: footer.html
+---
+> Welcome to the final part of the series where I recreate data visualizations in R from the book "Knowledge is Beautiful" by David McCandless. 
+
+David McCandless is author of two bestselling infographics books and gave a [TED talk about data visualization](http://www.ted.com/talks/david_mccandless_the_beauty_of_data_visualization). I bought his second book ["Knowledge is Beautiful"](https://informationisbeautiful.net/2014/knowledge-is-beautiful/), in 2015, which contains 196 beautiful infographics.
+
+If you haven't checked out the first part of the series yet, please do.
+
+# Plane Crashes
+***
+The **Plane Crashes** [dataset](https://docs.google.com/spreadsheets/d/1RT25s5oCsHJrahZkL6KWxAa2ZM9kD2aRakN9Cil_vHQ/edit#gid=11) is used for a couple of visualization which I will recreate. 
+
+The first is a stacked-barplot showing the cause of crashes for every plane crash from 1993 to January 2017 where the flight hasn't been military, medical or a private chartered flight.
+
+```{r}
+library(tidyr)
+
+df <- read.csv("worst_plane.csv")
+
+# Drop the year plane model entered service
+mini_df <- df %>% 
+  select(-year_service) %>% 
+# Gather the wide dataframe into a tidy format
+  gather(key = cause, value = proportion, -plane)
+# Order by cause
+mini_df$cause <- factor(mini_df$cause, levels = c("human_error","weather", "mechanical", "unknown", "criminal"), ordered = TRUE)
+
+# Create vector of plane names according to year they entered service
+names <- unique(mini_df$plane)
+names <- as.vector(names)
+# sort by factor
+mini_df$plane <- factor(mini_df$plane, levels = names)
+
+ggplot(mini_df, aes(x=plane, y=proportion, fill=cause)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  # Reverse the order of a categorical axis
+  scale_x_discrete(limits = rev(levels(mini_df$plane))) +
+  # Select manual colors that McCandless used
+  scale_fill_manual(values = c("#8E5A7E", "#A3BEC7", "#E1BD81", "#E9E4E0", "#74756F"), labels = c("Human Error", "Weather", "Mechanical", "Unknown", "Criminal")) +
+  labs(title = "Worst Planes", caption = "Source: bit.ly/KIB_PlaneCrashes") +
+  scale_y_reverse() +
+  theme(legend.position = "right",
+      panel.background = element_blank(),
+        plot.title = element_text(size = 13, 
+                                  family = "Georgia", 
+                                  face = "bold", lineheight = 1.2),
+      plot.caption = element_text(size = 5,
+                                    hjust = 0.99, family = "Georgia"),
+      axis.text = element_text(family = "Georgia"), 
+      # Get rid of the x axis text/title 
+      axis.text.x=element_blank(),
+      axis.title.x=element_blank(),
+      # and y axis title
+      axis.title.y=element_blank(),
+      # and legend title
+      legend.title = element_blank(),
+      legend.text = element_text(family = "Georgia"),
+      axis.ticks = element_blank())
+```
+
+The second visualization is an alluvial diagram for which we can use the `ggalluvial` package.
+
+```{r}
+library(alluvial)
+library(ggalluvial)
+
+crash <- read.csv("crashes_alluvial.csv")
+
+# stratum = cause, alluvium = freq
+
+ggplot(crash, aes(weight = freq,
+                  axis1 = phase,
+                  axis2 = cause,
+                  axis3 = total_crashes)) +
+  geom_alluvium(aes(fill = cause),
+                width = 0, knot.pos = 0, reverse = FALSE) +
+  guides(fill = FALSE) +
+  geom_stratum(width = 1/8, reverse = FALSE) +
+  geom_text(stat = "stratum", label.strata = TRUE, reverse = FALSE, size = 2.5) +
+  scale_x_continuous(breaks = 1:3, labels = c("phase", "causes", "total crashes")) +
+  coord_flip() +
+  labs(title = "Crash Cause", caption = "Source: bit.ly/KIB_PlaneCrashes") +
+  theme(panel.background = element_blank(),
+        plot.title = element_text(size = 13, 
+                                  family = "Georgia", 
+                                  face = "bold",
+                                  lineheight = 1.2,
+                                  vjust = -3,
+                                  hjust = 0.05), 
+        plot.caption = element_text(size = 5,
+                                    hjust = 0.99, family = "Georgia"),  
+        axis.text = element_text(family = "Georgia"),
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.ticks.y = element_blank())
+```
+
+```{r}
+gendergap <- read.csv("gendergap.csv")
+
+# gather the dataset
+tidy_gap <- gendergap %>% 
+  gather(key = sex, value = salary, -title, -category)
+
+category_means <- tidy_gap %>% 
+  group_by(category) %>%
+  summarize_at(vars(salary), mean)
+
+category_width <- tidy_gap %>% 
+  group_by(category) %>% 
+  summarise(count = length(unique(title)))
+
+q <- tidy_gap %>% ggplot(aes(x = title, y = salary, color = sex)) +
+  facet_wrap(~ category, nrow = 1, scales = "free_x") +
+  geom_line(color = "white") +
+  geom_point() +
+  geom_blank() +
+  scale_color_manual(values = c("#F49171", "#81C19C")) +
+  geom_hline(data = category_means, aes(yintercept = salary), color = "white", alpha = 0.6, size = 1) +
+  theme(aspect.ratio = 1, 
+        legend.position = "none",
+      panel.background = element_rect(color = "#242B47", fill = "#242B47"),
+      plot.background = element_rect(color = "#242B47", fill = "#242B47"),
+      axis.line = element_line(color = "grey48", size = 0.05, linetype = "dotted"),
+      axis.text = element_text(family = "Georgia", color = "white"),
+      axis.text.x = element_text(angle = 90),
+      # Get rid of the y- and x-axis titles
+      axis.title.y=element_blank(),
+      axis.title.x=element_blank(),
+      panel.grid.major.y = element_line(color = "grey48", size = 0.05),
+      panel.grid.minor.y = element_blank(),
+      panel.grid.major.x = element_blank(),
+      strip.background = element_rect(color = "#242B47", fill = "#242B47"),
+      strip.text = element_text(color = "white", family = "Georgia"))
+
+range_act <- range(range(tidy_gap$title))
+
+
+```
