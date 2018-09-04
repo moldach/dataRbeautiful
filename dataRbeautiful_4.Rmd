@@ -121,14 +121,13 @@ category_width <- tidy_gap %>%
   summarise(count = length(unique(title)))
 
 q <- tidy_gap %>% ggplot(aes(x = title, y = salary, color = sex)) +
-  facet_wrap(~ category, nrow = 1, scales = "free_x") +
+  facet_grid(. ~ category, scales = "free_x", space = "free") +
   geom_line(color = "white") +
   geom_point() +
   geom_blank() +
   scale_color_manual(values = c("#F49171", "#81C19C")) +
   geom_hline(data = category_means, aes(yintercept = salary), color = "white", alpha = 0.6, size = 1) +
-  theme(aspect.ratio = 1, 
-        legend.position = "none",
+  theme(legend.position = "none",
       panel.background = element_rect(color = "#242B47", fill = "#242B47"),
       plot.background = element_rect(color = "#242B47", fill = "#242B47"),
       axis.line = element_line(color = "grey48", size = 0.05, linetype = "dotted"),
