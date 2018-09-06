@@ -103,6 +103,23 @@ ggplot(crash, aes(weight = freq,
       axis.text.x = element_blank(),
       axis.ticks.x = element_blank(),
       axis.ticks.y = element_blank())
+
+## Create the second Sankey Diagram
+
+# Reorder dataframe
+crash$total_crashes <- rep("YeS", 25)
+
+
+library(magrittr)
+library(magrittr)
+# devtools::installgithub("Displayr/flipPlots")
+library(flipPlots)
+
+
+# Rearrange columns
+crash %<>% select(total_crashes, cause, phase, freq)
+
+SankeyDiagram(crash[, -4], link.color = "Source", label.show.varname = FALSE, weights = test_sankey$freq)
 ```
 
 ```{r}
