@@ -9,4 +9,4 @@ A four-part series on recreating data visualizations in R from the book "Knowled
 
 + Part IV of the series is found here: https://towardsdatascience.com/recreating-more-data-visualizations-from-the-book-knowledge-is-beautiful-part-iv-686938a84c9e
 
-The HTML markdown of R code for this project is found here: https://moldach.github.io/dataRbeautiful/index.html
+The R Markdown source for this project is available in [index.Rmd](index.Rmd). The former GitHub Pages site is retired.
